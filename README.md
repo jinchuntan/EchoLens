@@ -94,18 +94,20 @@ This repo is Vercel-ready:
 
 - Static frontend files stay at the project root.
 - `api/index.py` exposes the FastAPI app to Vercel's Python runtime.
-- `vercel.json` rewrites `/api/*` requests to that FastAPI function.
+- `vercel.json` explicitly deploys the static frontend and routes `/api/*` requests to that FastAPI function.
 - Root `requirements.txt` points Vercel to the backend Python dependencies.
 
 Recommended Vercel project settings:
 
 ```text
 Project Name: echolens or another lowercase name
-Framework Preset: Python / auto-detected
+Framework Preset: Other
 Build Command: None
 Output Directory: None
 Install Command: None / default
 ```
+
+The committed `vercel.json` uses explicit Vercel builders, so Vercel deploys the root static files and the Python API function together. If Vercel auto-detects only FastAPI, `/` will return `{"detail":"Not Found"}`; keep `vercel.json` committed to avoid that.
 
 Add these Environment Variables in Vercel Project Settings for real AI mode:
 
