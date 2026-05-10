@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,user-scalable=no,minimal-ui" />
+    <title>EchoLens</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://libs.zappar.com/zappar-threejs/2.0.6/zappar-threejs.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <!-- Welcome / landing screen — shown first, hidden on Start -->
+    <div id="welcome-screen">
+        <div id="welcome-glow"></div>
+        <div id="welcome-content">
+            <div id="brand-block">
+                <p id="welcome-kicker">AMD Developer Hackathon Prototype</p>
+                <h1 id="welcome-title">EchoLens</h1>
+                <p id="welcome-tagline">AI-powered immersive postcards for memories that can be seen, heard, and revisited in AR.</p>
+            </div>
+
+            <div id="composer-layout">
+                <form id="memory-form" autocomplete="off">
+                    <div class="form-row">
+                        <label for="recipient-input">Recipient name</label>
+                        <input id="recipient-input" name="recipient" type="text" placeholder="Maya" required />
+                    </div>
+
+                    <div class="form-row">
+                        <label for="occasion-input">Occasion / memory type</label>
+                        <input id="occasion-input" name="occasion" type="text" placeholder="Graduation trip, anniversary, reunion" required />
+                    </div>
+
+                    <div class="form-row">
+                        <label for="message-input">Short memory or message</label>
+                        <textarea id="message-input" name="message" rows="4" placeholder="Write a few details the AI can turn into a postcard memory..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="tone-select">Tone</label>
+                        <select id="tone-select" name="tone">
+                            <option value="warm">Warm</option>
+                            <option value="romantic">Romantic</option>
+                            <option value="funny">Funny</option>
+                            <option value="nostalgic">Nostalgic</option>
+                            <option value="cinematic">Cinematic</option>
+                            <option value="grateful">Grateful</option>
+                        </select>
+                    </div>
+
+                    <div id="composer-actions">
+                        <button id="generate-btn" type="submit">Generate Memory</button>
+                        <button id="start-btn" type="button" disabled>Start AR Experience</button>
+                    </div>
+                    <p id="composer-status" aria-live="polite"></p>
+                </form>
+
+                <article id="ai-preview" class="hidden" aria-live="polite">
+                    <p class="preview-eyebrow">Generated Memory</p>
+                    <h2 id="preview-title"></h2>
+                    <p id="preview-message"></p>
+                    <div class="preview-meta">
+                        <span id="preview-mood"></span>
+                        <span id="preview-room"></span>
+                    </div>
+                    <ul id="preview-fragments"></ul>
+                </article>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading / scan overlay — sits above camera feed -->
+    <div id="scan-overlay">
+
+        <!-- Phase 1: shown while GLB files download -->
+        <div id="loading-guide">
+            <div id="loading-spinner"></div>
+            <p class="guide-text">Loading rooms…</p>
+        </div>
+
+        <!-- Phase 2: guides user to scan postcard -->
+        <div id="scan-guide" class="guide-hidden">
+            <div id="postcard-frame">
+                <img src="./postcard.jpg" id="postcard-preview" alt="" draggable="false" />
+            </div>
+            <p id="scan-hint">Align the postcard image with your camera to see the 3D model</p>
+        </div>
+
+    </div>
+
+    <!-- Contextual hint shown when model is visible -->
+    <div id="hint-bar" class="hidden">
+        <span id="hint-text"></span>
+    </div>
+
+    <!-- AI memory overlay shown while postcard target is detected -->
+    <article id="memory-overlay" class="hidden">
+        <p id="memory-overlay-mood"></p>
+        <h2 id="memory-overlay-title"></h2>
+        <p id="memory-overlay-message"></p>
+        <ul id="memory-overlay-fragments"></ul>
+    </article>
+
+    <!-- Recording countdown — pointer-events: none so mic button stays tappable -->
+    <div id="record-overlay" class="hidden">
+        <div id="record-ring">
+            <span id="record-count">10</span>
+        </div>
+        <p id="record-label">Recording voice note</p>
+        <p id="record-sublabel">Tap 🎤 to stop early</p>
+    </div>
+
+    <!-- Recording instructions bottom sheet -->
+    <div id="record-info-modal" class="hidden">
+        <div id="record-info-backdrop"></div>
+        <div id="record-info-sheet">
+            <div id="record-info-handle"></div>
+            <h2 id="record-info-title">Record Your Voice</h2>
+            <div id="record-steps">
+                <div class="record-step">
+                    <div class="step-num">1</div>
+                    <div class="step-body">
+                        <strong>Press Start Recording</strong>
+                        <span>A 10-second countdown begins</span>
+                    </div>
+                </div>
+                <div class="record-step">
+                    <div class="step-num">2</div>
+                    <div class="step-body">
+                        <strong>Speak your message</strong>
+                        <span>Tap 🎤 again to stop early</span>
+                    </div>
+                </div>
+                <div class="record-step">
+                    <div class="step-num">3</div>
+                    <div class="step-body">
+                        <strong>Tap the room to play back</strong>
+                        <span>Tap again to stop the audio</span>
+                    </div>
+                </div>
+            </div>
+            <button id="record-info-start">Start Recording</button>
+            <button id="record-info-cancel">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Bottom UI — room switcher + mic -->
+    <div id="ui">
+        <div id="room-buttons">
+            <button class="room-btn active" data-room="0">Room 1</button>
+            <button class="room-btn" data-room="1">Room 2</button>
+        </div>
+        <button id="mic-btn" title="Record voice note">🎤</button>
+    </div>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
